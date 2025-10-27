@@ -5,12 +5,12 @@ export interface ProjectWithStats {
   id: string;
   name: string;
   clientId: string;
-  quoteId?: string;
+  quoteId?: string | null;
   startDate: Date;
-  endDate?: Date;
+  endDate?: Date | null;
   status: string;
-  budget?: number;
-  description?: string;
+  budget?: number | null;
+  description?: string | null;
   progress: number;
   createdAt: Date;
   updatedAt: Date;

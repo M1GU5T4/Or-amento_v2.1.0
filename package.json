@@ -29,9 +29,9 @@
   "author": "HE Segurança",
   "license": "MIT",
   "dependencies": {
+    "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "lucide-react": "^0.263.1",
     "recharts": "^2.8.0"
   },
   "devDependencies": {
@@ -39,6 +39,7 @@
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.3",
     "concurrently": "^8.2.0",
+    "terser": "^5.44.0",
     "vite": "^4.4.5"
   }
 }

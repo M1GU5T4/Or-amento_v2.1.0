@@ -52,7 +52,15 @@ app.use(helmet({
 // CORS configurado para produção
 const allowedOrigins = NODE_ENV === 'production' 
   ? (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
-  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:5500'];
+  : [
+      'http://localhost:5173', 
+      'http://localhost:3000', 
+      'http://localhost:3001', 
+      'http://localhost:4173',
+      'http://localhost:4174', 
+      'http://localhost:4175',
+      'http://127.0.0.1:5500'
+    ];
 
 app.use(cors({
   origin: allowedOrigins,

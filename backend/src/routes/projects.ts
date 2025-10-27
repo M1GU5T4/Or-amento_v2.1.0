@@ -1,14 +1,13 @@
 import express from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
+import prisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 const taskSchema = z.object({
   name: z.string().min(1, 'Nome da tarefa é obrigatório'),
-  isCompleted: z.boolean().optional(),
+  isCompleted: z.boolean().default(false),
 });
 
 const projectSchema = z.object({

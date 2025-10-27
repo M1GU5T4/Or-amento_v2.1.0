@@ -1,27 +1,40 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, Suspense, lazy } from 'react';
 import { WorkOrder, Status, Client, Quote, Invoice, Project, Expense, QuoteStatus, InvoiceStatus } from './types';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import WorkOrderList from './components/WorkOrderList';
-import WorkOrderForm from './components/WorkOrderForm';
-import ClientList from './components/ClientList';
-import ClientForm from './components/ClientForm';
-import QuoteList from './components/QuoteList';
-import QuoteForm from './components/QuoteForm';
-import InvoiceList from './components/InvoiceList';
-import InvoiceForm from './components/InvoiceForm';
-import ProjectList from './components/ProjectList';
-import ProjectForm from './components/ProjectForm';
-import ProjectDetails from './components/ProjectDetails';
-import ExpenseList from './components/ExpenseList';
-import Stock from './components/Stock';
-import Reports from './components/Reports';
-import Settings from './components/Settings';
-import ClientPortal from './components/ClientPortal';
-import Login from './components/Login';
 import { Plus } from 'lucide-react';
 import { mockWorkOrders, mockClients, mockQuotes, mockInvoices, mockProjects, mockExpenses } from './mockData';
 import { authService, clientService, workOrderService, quoteService, invoiceService, projectService, expenseService, validateAuth } from './services/api';
+import { preloadCriticalComponents, preloadRouteComponents } from './utils/preload';
+
+// Componentes essenciais carregados imediatamente
+import Sidebar from './components/Sidebar';
+import Login from './components/Login';
+
+// Lazy loading para componentes principais
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const WorkOrderList = lazy(() => import('./components/WorkOrderList'));
+const WorkOrderForm = lazy(() => import('./components/WorkOrderForm'));
+const ClientList = lazy(() => import('./components/ClientList'));
+const ClientForm = lazy(() => import('./components/ClientForm'));
+const QuoteList = lazy(() => import('./components/QuoteList'));
+const QuoteForm = lazy(() => import('./components/QuoteForm'));
+const InvoiceList = lazy(() => import('./components/InvoiceList'));
+const InvoiceForm = lazy(() => import('./components/InvoiceForm'));
+const ProjectList = lazy(() => import('./components/ProjectList'));
+const ProjectForm = lazy(() => import('./components/ProjectForm'));
+const ProjectDetails = lazy(() => import('./components/ProjectDetails'));
+const ExpenseList = lazy(() => import('./components/ExpenseList'));
+const Stock = lazy(() => import('./components/Stock'));
+const Reports = lazy(() => import('./components/Reports'));
+const Settings = lazy(() => import('./components/Settings'));
+const ClientPortal = lazy(() => import('./components/ClientPortal'));
+
+// Componente de loading
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+  </div>
+);
 
 
 export type View = 'dashboard' | 'orders' | 'clients' | 'quotes' | 'invoices' | 'projects' | 'expenses' | 'stock' | 'reports' | 'portal' | 'settings';
@@ -95,6 +108,8 @@ const App: React.FC = () => {
       if (authenticated) {
         try {
           await loadData();
+          // Preload componentes críticos após autenticação
+          preloadCriticalComponents();
         } catch (error) {
           console.error('Erro ao carregar dados:', error);
           // Se falhar ao carregar dados, pode ser problema de autenticação
@@ -108,6 +123,13 @@ const App: React.FC = () => {
 
     checkAuth();
   }, [loadData]);
+
+  // Preload componentes baseado na view atual
+  useEffect(() => {
+    if (isAuthenticated) {
+      preloadRouteComponents(currentView);
+    }
+  }, [currentView, isAuthenticated]);
   
   // Form states
   const [isWorkOrderFormOpen, setWorkOrderFormOpen] = useState(false);
@@ -252,37 +274,43 @@ const App: React.FC = () => {
 
 
   const viewContent = useMemo(() => {
+    const renderWithSuspense = (component: React.ReactNode) => (
+      <Suspense fallback={<LoadingSpinner />}>
+        {component}
+      </Suspense>
+    );
+
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard workOrders={workOrders} invoices={invoices} expenses={expenses} projects={projects} />;
+        return renderWithSuspense(<Dashboard workOrders={workOrders} invoices={invoices} expenses={expenses} projects={projects} />);
       case 'orders':
-        return <WorkOrderList workOrders={workOrders} clients={clients} onEdit={(order) => { setEditingWorkOrder(order); setWorkOrderFormOpen(true);}} onDelete={(id) => setWorkOrders(prev => prev.filter(o => o.id !== id))} />;
+        return renderWithSuspense(<WorkOrderList workOrders={workOrders} clients={clients} onEdit={(order) => { setEditingWorkOrder(order); setWorkOrderFormOpen(true);}} onDelete={(id) => setWorkOrders(prev => prev.filter(o => o.id !== id))} />);
       case 'clients':
-        return <ClientList clients={clients} onEdit={(client) => { setEditingClient(client); setClientFormOpen(true);}} onDelete={(id) => setClients(prev => prev.filter(c => c.id !== id))} />;
+        return renderWithSuspense(<ClientList clients={clients} onEdit={(client) => { setEditingClient(client); setClientFormOpen(true);}} onDelete={(id) => setClients(prev => prev.filter(c => c.id !== id))} />);
       case 'quotes':
-        return <QuoteList quotes={quotes} clients={clients} onEdit={(quote) => {setEditingQuote(quote); setQuoteFormOpen(true);}} onDelete={(id) => setQuotes(prev => prev.filter(q => q.id !== id))} />;
+        return renderWithSuspense(<QuoteList quotes={quotes} clients={clients} onEdit={(quote) => {setEditingQuote(quote); setQuoteFormOpen(true);}} onDelete={(id) => setQuotes(prev => prev.filter(q => q.id !== id))} />);
       case 'invoices':
-        return <InvoiceList invoices={invoices} clients={clients} onEdit={(invoice) => {setEditingInvoice(invoice); setInvoiceFormOpen(true);}} onDelete={(id) => setInvoices(prev => prev.filter(i => i.id !== id))} />;
+        return renderWithSuspense(<InvoiceList invoices={invoices} clients={clients} onEdit={(invoice) => {setEditingInvoice(invoice); setInvoiceFormOpen(true);}} onDelete={(id) => setInvoices(prev => prev.filter(i => i.id !== id))} />);
       case 'projects':
-        return <ProjectList 
+        return renderWithSuspense(<ProjectList 
           projects={projects} 
           clients={clients} 
           onEdit={(project) => { setEditingProject(project); setProjectFormOpen(true);}} 
           onDelete={(id) => setProjects(prev => prev.filter(p => p.id !== id))} 
           onViewDetails={(projectId) => setSelectedProjectId(projectId)}
-        />;
+        />);
       case 'expenses':
-        return <ExpenseList expenses={expenses} />;
+        return renderWithSuspense(<ExpenseList expenses={expenses} />);
       case 'stock':
-        return <Stock />;
+        return renderWithSuspense(<Stock />);
       case 'reports':
-        return <Reports invoices={invoices} expenses={expenses} />;
+        return renderWithSuspense(<Reports invoices={invoices} expenses={expenses} />);
       case 'portal':
-        return <ClientPortal clients={clients} invoices={invoices} quotes={quotes} projects={projects} />;
+        return renderWithSuspense(<ClientPortal clients={clients} invoices={invoices} quotes={quotes} projects={projects} />);
       case 'settings':
-        return <Settings />;
+        return renderWithSuspense(<Settings />);
       default:
-        return <Dashboard workOrders={workOrders} invoices={invoices} expenses={expenses} projects={projects} />;
+        return renderWithSuspense(<Dashboard workOrders={workOrders} invoices={invoices} expenses={expenses} projects={projects} />);
     }
   }, [currentView, workOrders, clients, quotes, invoices, projects, expenses]);
 
@@ -334,18 +362,40 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {isWorkOrderFormOpen && <WorkOrderForm workOrder={editingWorkOrder} clients={clients} onSave={handleSaveWorkOrder} onClose={() => setWorkOrderFormOpen(false)} />}
-      {isClientFormOpen && <ClientForm client={editingClient} onSave={handleSaveClient} onClose={() => setClientFormOpen(false)} />}
-      {isQuoteFormOpen && <QuoteForm quote={editingQuote} clients={clients} onSave={handleSaveQuote} onClose={() => setQuoteFormOpen(false)} />}
-      {isInvoiceFormOpen && <InvoiceForm invoice={editingInvoice} clients={clients} onSave={handleSaveInvoice} onClose={() => setInvoiceFormOpen(false)} />}
-      {isProjectFormOpen && <ProjectForm project={editingProject} quotes={quotes} clients={clients} onSave={handleSaveProject} onClose={() => setProjectFormOpen(false)} />}
+      {isWorkOrderFormOpen && (
+        <Suspense fallback={<LoadingSpinner />}>
+          <WorkOrderForm workOrder={editingWorkOrder} clients={clients} onSave={handleSaveWorkOrder} onClose={() => setWorkOrderFormOpen(false)} />
+        </Suspense>
+      )}
+      {isClientFormOpen && (
+        <Suspense fallback={<LoadingSpinner />}>
+          <ClientForm client={editingClient} onSave={handleSaveClient} onClose={() => setClientFormOpen(false)} />
+        </Suspense>
+      )}
+      {isQuoteFormOpen && (
+        <Suspense fallback={<LoadingSpinner />}>
+          <QuoteForm quote={editingQuote} clients={clients} onSave={handleSaveQuote} onClose={() => setQuoteFormOpen(false)} />
+        </Suspense>
+      )}
+      {isInvoiceFormOpen && (
+        <Suspense fallback={<LoadingSpinner />}>
+          <InvoiceForm invoice={editingInvoice} clients={clients} onSave={handleSaveInvoice} onClose={() => setInvoiceFormOpen(false)} />
+        </Suspense>
+      )}
+      {isProjectFormOpen && (
+        <Suspense fallback={<LoadingSpinner />}>
+          <ProjectForm project={editingProject} quotes={quotes} clients={clients} onSave={handleSaveProject} onClose={() => setProjectFormOpen(false)} />
+        </Suspense>
+      )}
       
       {/* Project Details Modal */}
       {selectedProjectId && (
-        <ProjectDetails 
-          projectId={selectedProjectId} 
-          onClose={() => setSelectedProjectId(null)} 
-        />
+        <Suspense fallback={<LoadingSpinner />}>
+          <ProjectDetails 
+            projectId={selectedProjectId} 
+            onClose={() => setSelectedProjectId(null)} 
+          />
+        </Suspense>
       )}
     </div>
   );

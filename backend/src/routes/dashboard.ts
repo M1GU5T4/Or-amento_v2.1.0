@@ -79,11 +79,11 @@ router.get('/metrics', async (req, res) => {
     const totalClients = await prisma.client.count();
 
     // Receita dos últimos 6 meses para gráfico
-    const monthlyRevenue = [];
+    const monthlyRevenue: Array<{ month: string; revenue: number }> = [];
     for (let i = 5; i >= 0; i--) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-      
+
       const revenue = await prisma.invoice.aggregate({
         where: {
           status: 'PAGO',

@@ -15,8 +15,9 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        userId: string;
+        id: string;
         email: string;
+        name: string;
         role: string;
       };
     }
@@ -42,7 +43,7 @@ const settingsSchema = z.object({
 // Obter configurações do usuário
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
@@ -81,7 +82,7 @@ router.get('/', async (req, res) => {
     logger.info('Configurações do usuário obtidas', { userId });
     res.json(settingsData);
   } catch (error) {
-    logger.error('Erro ao obter configurações do usuário', { error, userId: req.user?.userId });
+    logger.error('Erro ao obter configurações do usuário', { error, userId: req.user?.id });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -89,7 +90,7 @@ router.get('/', async (req, res) => {
 // Atualizar configurações do usuário
 router.put('/', async (req, res) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
@@ -141,7 +142,7 @@ router.put('/', async (req, res) => {
       });
     }
 
-    logger.error('Erro ao atualizar configurações do usuário', { error, userId: req.user?.userId });
+    logger.error('Erro ao atualizar configurações do usuário', { error, userId: req.user?.id });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -172,7 +173,7 @@ router.post('/test-gemini', async (req, res) => {
 // Remover token do Gemini
 router.delete('/gemini-token', async (req, res) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
@@ -195,7 +196,7 @@ router.delete('/gemini-token', async (req, res) => {
     logger.info('Token do Gemini removido', { userId });
     res.json({ message: 'Token removido com sucesso' });
   } catch (error) {
-    logger.error('Erro ao remover token do Gemini', { error, userId: req.user?.userId });
+    logger.error('Erro ao remover token do Gemini', { error, userId: req.user?.id });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

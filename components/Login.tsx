@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { authService } from '../services/api';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff, UserPlus } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('admin@heseguranca.com');
-  const [password, setPassword] = useState('admin123');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState(isRegisterMode ? '' : 'admin@heseguranca.com');
+  const [password, setPassword] = useState(isRegisterMode ? '' : 'admin123');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,12 +23,44 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      await authService.login(email, password);
+      if (isRegisterMode) {
+        // Validações do registro
+        if (password !== confirmPassword) {
+          throw new Error('As senhas não coincidem');
+        }
+        if (password.length < 6) {
+          throw new Error('A senha deve ter pelo menos 6 caracteres');
+        }
+        if (name.length < 2) {
+          throw new Error('O nome deve ter pelo menos 2 caracteres');
+        }
+
+        await authService.register(name, email, password);
+      } else {
+        await authService.login(email, password);
+      }
       onLogin();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao fazer login');
+      setError(err instanceof Error ? err.message : `Erro ao ${isRegisterMode ? 'registrar' : 'fazer login'}`);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsRegisterMode(!isRegisterMode);
+    setError('');
+    // Limpar campos ao trocar de modo
+    if (!isRegisterMode) {
+      setEmail('');
+      setPassword('');
+      setName('');
+      setConfirmPassword('');
+    } else {
+      setEmail('admin@heseguranca.com');
+      setPassword('admin123');
+      setName('');
+      setConfirmPassword('');
     }
   };
 
@@ -35,13 +71,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-              <LogIn className="h-8 w-8 text-white" />
+              {isRegisterMode ? <UserPlus className="h-8 w-8 text-white" /> : <LogIn className="h-8 w-8 text-white" />}
             </div>
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
               Sistema de Gestão
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Faça login para acessar o sistema
+              {isRegisterMode ? 'Crie sua conta para acessar o sistema' : 'Faça login para acessar o sistema'}
             </p>
           </div>
 
@@ -50,6 +86,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                 <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
+            {isRegisterMode && (
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nome Completo
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                  placeholder="Seu nome completo"
+                />
               </div>
             )}
 
@@ -79,8 +132,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  minLength={isRegisterMode ? 6 : undefined}
                   className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
-                  placeholder="Sua senha"
+                  placeholder={isRegisterMode ? "Mínimo 6 caracteres" : "Sua senha"}
                 />
                 <button
                   type="button"
@@ -92,6 +146,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </div>
             </div>
 
+            {isRegisterMode && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirmar Senha
+                </label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                    placeholder="Confirme sua senha"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -100,25 +180,41 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Entrando...</span>
+                  <span>{isRegisterMode ? 'Registrando...' : 'Entrando...'}</span>
                 </>
               ) : (
                 <>
-                  <LogIn size={20} />
-                  <span>Entrar</span>
+                  {isRegisterMode ? <UserPlus size={20} /> : <LogIn size={20} />}
+                  <span>{isRegisterMode ? 'Criar Conta' : 'Entrar'}</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-              <strong>Credenciais de demonstração:</strong><br />
-              Email: admin@heseguranca.com<br />
-              Senha: admin123
-            </p>
+          {/* Toggle between login and register */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+            >
+              {isRegisterMode 
+                ? 'Já tem uma conta? Faça login' 
+                : 'Não tem uma conta? Registre-se'
+              }
+            </button>
           </div>
+
+          {/* Demo credentials - only show in login mode */}
+          {!isRegisterMode && (
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                <strong>Credenciais de demonstração:</strong><br />
+                Email: admin@heseguranca.com<br />
+                Senha: admin123
+              </p>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="mt-8 text-center">

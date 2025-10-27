@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { seedStock } from './stockSeed';
 
 const prisma = new PrismaClient();
 
@@ -272,8 +271,133 @@ async function main() {
 
   console.log('💸 Despesas criadas:', expenses.length);
 
-  // Executar seed de estoque
-  await seedStock();
+  // Seed de estoque
+  console.log('📦 Iniciando seed do estoque...');
+
+  // Criar categorias de estoque
+  const categories = await Promise.all([
+    prisma.stockCategory.upsert({
+      where: { name: 'Eletrônicos' },
+      update: {},
+      create: {
+        name: 'Eletrônicos',
+        description: 'Componentes e equipamentos eletrônicos',
+      },
+    }),
+    prisma.stockCategory.upsert({
+      where: { name: 'Ferramentas' },
+      update: {},
+      create: {
+        name: 'Ferramentas',
+        description: 'Ferramentas e equipamentos de trabalho',
+      },
+    }),
+    prisma.stockCategory.upsert({
+      where: { name: 'Materiais de Escritório' },
+      update: {},
+      create: {
+        name: 'Materiais de Escritório',
+        description: 'Suprimentos e materiais de escritório',
+      },
+    }),
+  ]);
+
+  console.log('📂 Categorias de estoque criadas:', categories.length);
+
+  // Criar itens de estoque
+  const stockItems = await Promise.all([
+    prisma.stockItem.create({
+      data: {
+        name: 'Cabo HDMI 2m',
+        description: 'Cabo HDMI 2.0 de 2 metros',
+        categoryId: categories[0].id,
+        type: 'PRODUTO',
+        unit: 'UN',
+        price: 25.90,
+        quantity: 50,
+        minStock: 10,
+        supplier: 'TechSupply Ltda',
+      },
+    }),
+    prisma.stockItem.create({
+      data: {
+        name: 'Chave de Fenda Phillips',
+        description: 'Chave de fenda Phillips tamanho médio',
+        categoryId: categories[1].id,
+        type: 'FERRAMENTA',
+        unit: 'UN',
+        price: 12.50,
+        quantity: 25,
+        minStock: 5,
+        supplier: 'Ferramentas Pro',
+      },
+    }),
+    prisma.stockItem.create({
+      data: {
+        name: 'Papel A4 500 folhas',
+        description: 'Resma de papel A4 branco 75g',
+        categoryId: categories[2].id,
+        type: 'MATERIAL',
+        unit: 'UN',
+        price: 18.90,
+        quantity: 100,
+        minStock: 20,
+        supplier: 'Papelaria Central',
+      },
+    }),
+    prisma.stockItem.create({
+      data: {
+        name: 'Switch 8 portas',
+        description: 'Switch Gigabit 8 portas',
+        categoryId: categories[0].id,
+        type: 'EQUIPAMENTO',
+        unit: 'UN',
+        price: 89.90,
+        quantity: 15,
+        minStock: 3,
+        supplier: 'TechSupply Ltda',
+      },
+    }),
+  ]);
+
+  console.log('📦 Itens de estoque criados:', stockItems.length);
+
+  // Criar alguns movimentos de estoque
+  const movements = await Promise.all([
+    prisma.stockMovement.create({
+      data: {
+        itemId: stockItems[0].id,
+        type: 'ENTRADA',
+        quantity: 50,
+        unitPrice: 25.90,
+        totalValue: 50 * 25.90,
+        reason: 'Compra inicial',
+      },
+    }),
+    prisma.stockMovement.create({
+      data: {
+        itemId: stockItems[0].id,
+        type: 'SAIDA',
+        quantity: 5,
+        unitPrice: 25.90,
+        totalValue: 5 * 25.90,
+        reason: 'Usado em projeto Tech Solutions',
+      },
+    }),
+    prisma.stockMovement.create({
+      data: {
+        itemId: stockItems[3].id,
+        type: 'ENTRADA',
+        quantity: 15,
+        unitPrice: 89.90,
+        totalValue: 15 * 89.90,
+        reason: 'Compra inicial',
+      },
+    }),
+  ]);
+
+  console.log('📊 Movimentos de estoque criados:', movements.length);
+  console.log('✅ Seed do estoque concluído!');
 
   console.log('✅ Seed concluído com sucesso!');
 }
