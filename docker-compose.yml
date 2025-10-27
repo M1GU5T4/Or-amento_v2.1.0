@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # 1. Aplicação Principal (Backend + Frontend)
+  app:
+    build: . # <-- Usa o Dockerfile da raiz
+    container_name: meu_app_sistema
+    restart: unless-stopped
+    ports:
+      # Frontend na porta 3001, Backend na porta 3002
+      - "3001:3001"
+      - "3002:3002"
+    environment:
+      # Conecta no banco de dados 'db'
+      DATABASE_URL: mysql://${DB_USERNAME}:${DB_PASSWORD}@db:3306/${DB_DATABASE}
+      DB_HOST: db
+      DB_USER: '${DB_USERNAME}'
+      DB_PASSWORD: '${DB_PASSWORD}'
+      DB_DATABASE: '${DB_DATABASE}'
+      NODE_ENV: production
+      PORT: 3002
+      FRONTEND_PORT: 3001
+      JWT_SECRET: '${JWT_SECRET:-seu_jwt_secret_super_seguro}'
+      ADMIN_EMAIL: '${ADMIN_EMAIL:-admin@heseguranca.com}'
+      ADMIN_PASSWORD: '${ADMIN_PASSWORD:-admin123}'
+      ADMIN_NAME: '${ADMIN_NAME:-Administrador HE Segurança}'
+      RUN_SEED: 'true'
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - servicos-net
+
+  # 2. Serviço do Banco de Dados (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: meu_app_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+    ports:
+      - "3306:3306"
+    volumes:
+      - meu_app_data:/var/lib/mysql
+    networks:
+      - servicos-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # 3. Serviço do phpMyAdmin (Gerenciador do Banco)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma-app
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: '${DB_USERNAME}'
+      PMA_PASSWORD: '${DB_PASSWORD}'
+    depends_on:
+      - db
+    networks:
+      - servicos-net
+
+volumes:
+  meu_app_data: # <-- Volume para persistir os dados do banco
+    driver: local
+
+networks:
+  servicos-net:
+    name: servicos-net
+    driver: bridge

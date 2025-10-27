@@ -1,0 +1,44 @@
+{
+  "name": "sistema-gestao-empresarial",
+  "version": "2.1.0",
+  "description": "Sistema de Gestão Empresarial - ERP/CRM Completo",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start:prod": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "npm run preview -- --port 3001 --host 0.0.0.0",
+    "docker:build": "docker build -t erp-sistema .",
+    "docker:run": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v && docker system prune -f"
+  },
+  "keywords": [
+    "erp",
+    "crm",
+    "gestao",
+    "empresarial",
+    "react",
+    "nodejs",
+    "mysql",
+    "prisma"
+  ],
+  "author": "HE Segurança",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.263.1",
+    "recharts": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "concurrently": "^8.2.0",
+    "vite": "^4.4.5"
+  }
+}

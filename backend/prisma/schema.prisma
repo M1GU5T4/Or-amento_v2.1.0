@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("USER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Client {
+  id         String      @id @default(cuid())
+  name       String
+  email      String      @unique
+  phone      String
+  address    String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  invoices   Invoice[]
+  projects   Project[]
+  quotes     Quote[]
+  workOrders WorkOrder[]
+
+  @@map("clients")
+}
+
+model WorkOrder {
+  id            String   @id @default(cuid())
+  clientId      String
+  serviceType   String
+  technician    String
+  scheduledDate DateTime
+  status        String   @default("PENDENTE")
+  value         Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId], map: "work_orders_clientId_fkey")
+  @@map("work_orders")
+}
+
+model Quote {
+  id          String          @id @default(cuid())
+  quoteNumber String          @unique
+  clientId    String
+  issueDate   DateTime
+  expiryDate  DateTime
+  subtotal    Float
+  tax         Float           @default(0)
+  total       Float
+  status      String          @default("RASCUNHO")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  notes       String?         @db.Text
+  invoices    Invoice[]
+  lineItems   QuoteLineItem[]
+  projects    Project[]       // Projetos criados a partir deste orçamento
+  client      Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId], map: "quotes_clientId_fkey")
+  @@map("quotes")
+}
+
+model Invoice {
+  id            String            @id @default(cuid())
+  invoiceNumber String            @unique
+  quoteId       String?
+  clientId      String
+  issueDate     DateTime
+  dueDate       DateTime
+  subtotal      Float
+  tax           Float             @default(0)
+  total         Float
+  amountPaid    Float             @default(0)
+  status        String            @default("RASCUNHO")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  expenses      Expense[]
+  lineItems     InvoiceLineItem[]
+  client        Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  quote         Quote?            @relation(fields: [quoteId], references: [id])
+
+  @@index([clientId], map: "invoices_clientId_fkey")
+  @@index([quoteId], map: "invoices_quoteId_fkey")
+  @@map("invoices")
+}
+
+model Project {
+  id              String           @id @default(cuid())
+  name            String
+  clientId        String
+  quoteId         String?          // Referência ao orçamento de origem
+  startDate       DateTime
+  endDate         DateTime?
+  status          String           @default("NAO_INICIADO")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  budget          Float?
+  description     String?
+  progress        Int              @default(0)
+  projectExpenses ProjectExpense[]
+  projectNotes    ProjectNote[]
+  client          Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  quote           Quote?           @relation(fields: [quoteId], references: [id])
+  tasks           Task[]
+
+  @@index([clientId], map: "projects_clientId_fkey")
+  @@index([quoteId], map: "projects_quoteId_fkey")
+  @@map("projects")
+}
+
+model Task {
+  id          String  @id @default(cuid())
+  name        String
+  isCompleted Boolean @default(false)
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "tasks_projectId_fkey")
+  @@map("tasks")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  description String
+  amount      Float
+  date        DateTime
+  invoiceId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  invoice     Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId], map: "expenses_invoiceId_fkey")
+  @@map("expenses")
+}
+
+model ProjectExpense {
+  id          String   @id @default(cuid())
+  projectId   String
+  category    String
+  description String
+  amount      Float
+  date        DateTime
+  receipt     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "project_expenses_projectId_fkey")
+  @@map("project_expenses")
+}
+
+model ProjectNote {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  content   String   @db.Text
+  type      String   @default("GERAL")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "project_notes_projectId_fkey")
+  @@map("project_notes")
+}
+
+model StockCategory {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       StockItem[]
+
+  @@map("stock_categories")
+}
+
+model StockItem {
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  categoryId       String
+  type             String
+  unit             String
+  price            Float
+  quantity         Float             @default(0)
+  minStock         Float?
+  maxStock         Float?
+  barcode          String?
+  supplier         String?
+  location         String?
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  invoiceLineItems InvoiceLineItem[]
+  quoteLineItems   QuoteLineItem[]
+  category         StockCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  movements        StockMovement[]
+
+  @@index([categoryId], map: "stock_items_categoryId_fkey")
+  @@map("stock_items")
+}
+
+model StockMovement {
+  id         String    @id @default(cuid())
+  itemId     String
+  type       String
+  quantity   Float
+  unitPrice  Float?
+  totalValue Float?
+  reason     String?
+  reference  String?
+  userId     String?
+  createdAt  DateTime  @default(now())
+  item       StockItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId], map: "stock_movements_itemId_fkey")
+  @@map("stock_movements")
+}
+
+model QuoteLineItem {
+  id          String     @id @default(cuid())
+  quoteId     String
+  stockItemId String?
+  description String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+  quote       Quote      @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  stockItem   StockItem? @relation(fields: [stockItemId], references: [id])
+
+  @@index([quoteId], map: "quote_line_items_quoteId_fkey")
+  @@index([stockItemId], map: "quote_line_items_stockItemId_fkey")
+  @@map("quote_line_items")
+}
+
+model InvoiceLineItem {
+  id          String     @id @default(cuid())
+  invoiceId   String
+  stockItemId String?
+  description String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+  invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  stockItem   StockItem? @relation(fields: [stockItemId], references: [id])
+
+  @@index([invoiceId], map: "invoice_line_items_invoiceId_fkey")
+  @@index([stockItemId], map: "invoice_line_items_stockItemId_fkey")
+  @@map("invoice_line_items")
+}
+model UserSettings {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  geminiApiKey String?
+  theme        String?  @default("light")
+  notifications Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("user_settings")
+}
