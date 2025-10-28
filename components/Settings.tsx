@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User, Bell, Shield, Palette, FileText, Bot, Key, Eye, EyeOff } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, Palette, FileText, Bot, Key, Eye, EyeOff, Zap, BarChart3, Code, Wrench } from 'lucide-react';
 import LogViewer from './LogViewer.tsx';
+import GeminiBackupPanel from './GeminiBackupPanel';
 import { settingsService } from '../services/api';
 
 const Settings: React.FC = () => {
@@ -9,6 +10,7 @@ const Settings: React.FC = () => {
   const [showToken, setShowToken] = useState(false);
   const [tokenStatus, setTokenStatus] = useState<'idle' | 'testing' | 'valid' | 'invalid'>('idle');
   const [tokenMessage, setTokenMessage] = useState('');
+  const [showBackupPanel, setShowBackupPanel] = useState(false);
 
   // Carregar configurações ao montar o componente
   useEffect(() => {
@@ -319,6 +321,60 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
+        {/* Seção de Backup IA */}
+        <div className="mt-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                <Zap className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Assistente IA - Backup & Suporte
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Sistema inteligente de backup e assistência para completar funcionalidades
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowBackupPanel(true)}
+              disabled={tokenStatus !== 'valid'}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+            >
+              <Bot className="h-4 w-4" />
+              <span>Abrir Assistente</span>
+            </button>
+          </div>
+          
+          {tokenStatus !== 'valid' && (
+            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                ⚠️ Configure um token válido do Gemini para usar o assistente IA
+              </p>
+            </div>
+          )}
+          
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+              <BarChart3 className="h-4 w-4 text-blue-500" />
+              <span>Análise de Dados</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+              <Code className="h-4 w-4 text-green-500" />
+              <span>Geração de Código</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+              <Shield className="h-4 w-4 text-purple-500" />
+              <span>Backup Inteligente</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+              <Wrench className="h-4 w-4 text-red-500" />
+              <span>Resolução de Erros</span>
+            </div>
+          </div>
+        </div>
+
         {/* Botões de Ação */}
         <div className="mt-8 flex justify-end space-x-3">
           <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -357,6 +413,11 @@ const Settings: React.FC = () => {
         </div>
       ) : (
         <LogViewer />
+      )}
+
+      {/* Painel de Backup IA */}
+      {showBackupPanel && (
+        <GeminiBackupPanel onClose={() => setShowBackupPanel(false)} />
       )}
     </div>
   );

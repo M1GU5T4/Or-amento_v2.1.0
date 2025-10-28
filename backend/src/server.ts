@@ -16,6 +16,7 @@ import expenseRoutes from './routes/expenses';
 import dashboardRoutes from './routes/dashboard';
 import stockRoutes from './routes/stock';
 import settingsRoutes from './routes/settings-simple';
+import geminiBackupRoutes from './routes/geminiBackup';
 
 dotenv.config();
 
@@ -109,6 +110,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/stock', stockRoutes);
+app.use('/api/gemini-backup', geminiBackupRoutes);
 
 // Middleware de tratamento de erros (deve ser o último)
 app.use(errorHandler);
