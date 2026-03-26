@@ -22,32 +22,36 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = registerSchema.parse(req.body);
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
+    // Para modo sem banco, apenas aceitar registro do admin
+    if (email === 'admin@admin.com') {
+      const token = jwt.sign(
+        { userId: 'admin' },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      );
 
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email já está em uso' });
+      res.status(201).json({
+        message: 'Usuário criado com sucesso',
+        user: {
+          id: 'admin',
+          name: name || 'Administrador',
+          email,
+          role: 'admin',
+          createdAt: new Date()
+        },
+        token
+      });
+    } else {
+      return res.status(400).json({ error: 'Registro desabilitado no modo sem banco de dados' });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      }
-    });
-
-    const token = jwt.sign(
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    console.error('Erro no registro:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
       { userId: user.id },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
@@ -72,32 +76,38 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+    // Credenciais padrão do admin
+    const adminEmail = 'admin@admin.com';
+    const adminPassword = 'admin';
 
-    if (!user) {
+    if (email === adminEmail && password === adminPassword) {
+      const token = jwt.sign(
+        { userId: 'admin' },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      );
+
+      res.json({
+        message: 'Login realizado com sucesso',
+        user: {
+          id: 'admin',
+          name: 'Administrador',
+          email: adminEmail,
+          role: 'admin'
+        },
+        token
+      });
+    } else {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
-
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
     }
-
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
-    );
-
-    res.json({
-      message: 'Login realizado com sucesso',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+    console.error('Erro no login:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
         role: user.role,
       },
       token

@@ -21,7 +21,7 @@ import geminiBackupRoutes from './routes/geminiBackup';
 dotenv.config();
 
 // Validar variáveis de ambiente obrigatórias
-const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];
+const requiredEnvVars = ['JWT_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {

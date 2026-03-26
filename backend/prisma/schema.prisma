@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL", "file:./dev.db")
 }
 
 model User {
@@ -47,7 +47,7 @@ model WorkOrder {
   updatedAt     DateTime @updatedAt
   client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  @@index([clientId], map: "work_orders_clientId_fkey")
+  @@index([clientId])
   @@map("work_orders")
 }
 
@@ -69,7 +69,7 @@ model Quote {
   projects    Project[]       // Projetos criados a partir deste orçamento
   client      Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  @@index([clientId], map: "quotes_clientId_fkey")
+  @@index([clientId])
   @@map("quotes")
 }
 
@@ -92,8 +92,8 @@ model Invoice {
   client        Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   quote         Quote?            @relation(fields: [quoteId], references: [id])
 
-  @@index([clientId], map: "invoices_clientId_fkey")
-  @@index([quoteId], map: "invoices_quoteId_fkey")
+  @@index([clientId])
+  @@index([quoteId])
   @@map("invoices")
 }
 
@@ -116,8 +116,8 @@ model Project {
   quote           Quote?           @relation(fields: [quoteId], references: [id])
   tasks           Task[]
 
-  @@index([clientId], map: "projects_clientId_fkey")
-  @@index([quoteId], map: "projects_quoteId_fkey")
+  @@index([clientId])
+  @@index([quoteId])
   @@map("projects")
 }
 
@@ -128,7 +128,7 @@ model Task {
   projectId   String
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId], map: "tasks_projectId_fkey")
+  @@index([projectId])
   @@map("tasks")
 }
 
@@ -143,7 +143,7 @@ model Expense {
   updatedAt   DateTime @updatedAt
   invoice     Invoice? @relation(fields: [invoiceId], references: [id])
 
-  @@index([invoiceId], map: "expenses_invoiceId_fkey")
+  @@index([invoiceId])
   @@map("expenses")
 }
 
@@ -159,7 +159,7 @@ model ProjectExpense {
   updatedAt   DateTime @updatedAt
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId], map: "project_expenses_projectId_fkey")
+  @@index([projectId])
   @@map("project_expenses")
 }
 
@@ -173,7 +173,7 @@ model ProjectNote {
   updatedAt DateTime @updatedAt
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId], map: "project_notes_projectId_fkey")
+  @@index([projectId])
   @@map("project_notes")
 }
 
@@ -210,7 +210,7 @@ model StockItem {
   category         StockCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   movements        StockMovement[]
 
-  @@index([categoryId], map: "stock_items_categoryId_fkey")
+  @@index([categoryId])
   @@map("stock_items")
 }
 
@@ -227,7 +227,7 @@ model StockMovement {
   createdAt  DateTime  @default(now())
   item       StockItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@index([itemId], map: "stock_movements_itemId_fkey")
+  @@index([itemId])
   @@map("stock_movements")
 }
 
@@ -242,8 +242,8 @@ model QuoteLineItem {
   quote       Quote      @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   stockItem   StockItem? @relation(fields: [stockItemId], references: [id])
 
-  @@index([quoteId], map: "quote_line_items_quoteId_fkey")
-  @@index([stockItemId], map: "quote_line_items_stockItemId_fkey")
+  @@index([quoteId])
+  @@index([stockItemId])
   @@map("quote_line_items")
 }
 
@@ -258,8 +258,8 @@ model InvoiceLineItem {
   invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   stockItem   StockItem? @relation(fields: [stockItemId], references: [id])
 
-  @@index([invoiceId], map: "invoice_line_items_invoiceId_fkey")
-  @@index([stockItemId], map: "invoice_line_items_stockItemId_fkey")
+  @@index([invoiceId])
+  @@index([stockItemId])
   @@map("invoice_line_items")
 }
 model UserSettings {

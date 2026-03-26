@@ -9,8 +9,8 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [name, setName] = useState('');
-  const [email, setEmail] = useState(isRegisterMode ? '' : 'admin@heseguranca.com');
-  const [password, setPassword] = useState(isRegisterMode ? '' : 'admin123');
+  const [email, setEmail] = useState(isRegisterMode ? '' : 'admin@admin.com');
+  const [password, setPassword] = useState(isRegisterMode ? '' : 'admin');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

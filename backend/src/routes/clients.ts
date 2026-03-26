@@ -1,7 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
 import { authenticateToken } from '../middleware/auth';
-import prisma from '../lib/prisma';
 
 const router = express.Router();
 
@@ -12,25 +11,28 @@ const clientSchema = z.object({
   address: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
 });
 
+// Dados mock para modo sem banco
+let mockClients = [
+  { id: 'c1', name: 'Tech Solutions Ltda', email: 'contato@techsolutions.com', phone: '(11) 98765-4321', address: 'Av. Paulista, 1000', createdAt: new Date() },
+  { id: 'c2', name: 'Inova Corp', email: 'financeiro@inova.com', phone: '(21) 91234-5678', address: 'Rua das Inovações, 200', createdAt: new Date() },
+  { id: 'c3', name: 'Constru Bem', email: 'obras@construbem.com.br', phone: '(31) 95555-1234', address: 'Alameda dos Construtores, 50', createdAt: new Date() },
+];
+
 // Aplicar autenticação em todas as rotas
 router.use(authenticateToken);
 
 // Listar todos os clientes
 router.get('/', async (req, res) => {
   try {
-    const clients = await prisma.client.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: {
-            workOrders: true,
-            quotes: true,
-            invoices: true,
-            projects: true,
-          }
-        }
+    const clients = mockClients.map(client => ({
+      ...client,
+      _count: {
+        workOrders: 0,
+        quotes: 0,
+        invoices: 0,
+        projects: 0,
       }
-    });
+    }));
 
     res.json(clients);
   } catch (error) {
@@ -44,21 +46,19 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const client = await prisma.client.findUnique({
-      where: { id },
-      include: {
-        workOrders: true,
-        quotes: true,
-        invoices: true,
-        projects: true,
-      }
-    });
+    const client = mockClients.find(c => c.id === id);
 
     if (!client) {
       return res.status(404).json({ error: 'Cliente não encontrado' });
     }
 
-    res.json(client);
+    res.json({
+      ...client,
+      workOrders: [],
+      quotes: [],
+      invoices: [],
+      projects: [],
+    });
   } catch (error) {
     console.error('Erro ao buscar cliente:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
@@ -70,19 +70,21 @@ router.post('/', async (req, res) => {
   try {
     const data = clientSchema.parse(req.body);
 
-    const existingClient = await prisma.client.findUnique({
-      where: { email: data.email }
-    });
+    const existingClient = mockClients.find(c => c.email === data.email);
 
     if (existingClient) {
       return res.status(400).json({ error: 'Email já está em uso' });
     }
 
-    const client = await prisma.client.create({
-      data
-    });
+    const newClient = {
+      id: `c${Date.now()}`,
+      ...data,
+      createdAt: new Date()
+    };
 
-    res.status(201).json(client);
+    mockClients.push(newClient);
+
+    res.status(201).json(newClient);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -98,32 +100,22 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const data = clientSchema.parse(req.body);
 
-    const existingClient = await prisma.client.findUnique({
-      where: { id }
-    });
+    const clientIndex = mockClients.findIndex(c => c.id === id);
 
-    if (!existingClient) {
+    if (clientIndex === -1) {
       return res.status(404).json({ error: 'Cliente não encontrado' });
     }
 
     // Verificar se o email já está em uso por outro cliente
-    const emailInUse = await prisma.client.findFirst({
-      where: {
-        email: data.email,
-        id: { not: id }
-      }
-    });
+    const emailInUse = mockClients.find(c => c.email === data.email && c.id !== id);
 
     if (emailInUse) {
       return res.status(400).json({ error: 'Email já está em uso' });
     }
 
-    const client = await prisma.client.update({
-      where: { id },
-      data
-    });
+    mockClients[clientIndex] = { ...mockClients[clientIndex], ...data };
 
-    res.json(client);
+    res.json(mockClients[clientIndex]);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
@@ -138,17 +130,13 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existingClient = await prisma.client.findUnique({
-      where: { id }
-    });
+    const clientIndex = mockClients.findIndex(c => c.id === id);
 
-    if (!existingClient) {
+    if (clientIndex === -1) {
       return res.status(404).json({ error: 'Cliente não encontrado' });
     }
 
-    await prisma.client.delete({
-      where: { id }
-    });
+    mockClients.splice(clientIndex, 1);
 
     res.json({ message: 'Cliente deletado com sucesso' });
   } catch (error) {
